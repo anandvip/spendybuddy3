@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendyBuddy</title>
+    <style>
+        :root {
+            --background-color-light: #fff;
+            --text-color-light: #000;
+            --table-header-background-light: #f2f2f2;
+            --table-row-background-light: #fff;
+            --table-row-hover-background-light: #f8f8f8;
+
+            --background-color-dark: #333;
+            --text-color-dark: #fff;
+            --table-header-background-dark: #555;
+            --table-row-background-dark: #444;
+            --table-row-hover-background-dark: #555;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: var(--background-color-light);
+            color: var(--text-color-light);
+        }
+
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 150px;
+            background-color: #f2f2f2;
+            border-radius: 50%;
+            margin: 20px auto;
+            width: 150px;
+            height: 150px;
+            overflow: hidden;
+        }
+
+        header img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form,
+        #expense-list,
+        #report-section {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--table-header-background-light);
+        }
+
+        tr {
+            background-color: var(--table-row-background-light);
+        }
+
+        tr:hover {
+            background-color: var(--table-row-hover-background-light);
+        }
+
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            border-radius: 30px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        #settings-content {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #settings-content>div {
+            width: 45%;
+        }
+
+        .tag {
+            display: inline-block;
+            background-color: #e0e0e0;
+            padding: 2px 5px;
+            margin: 2px;
+            border-radius: 3px;
+        }
+
+        .tag button {
+            margin-left: 5px;
+            padding: 0 3px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        #debug-log {
+            background-color: #333;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+          color:#fff;
+          border-radius:15px;
+          width:fit-content
+        }
+
+        .unnecessary-spend {
+            background-color: #ffcccc;
+        }
+
+        #today-expenses {
+            margin-top: 20px;
+        }
+
+        body.dark-mode {
+            background-color: var(--background-color-dark);
+            color: var(--text-color-dark);
+        }
+
+        body.dark-mode th {
+            background-color: var(--table-header-background-dark);
+        }
+
+        body.dark-mode tr {
+            background-color: var(--table-row-background-dark);
+        }
+
+        body.dark-mode tr:hover {
+            background-color: var(--table-row-hover-background-dark);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <img src="https://github.com/anandvip/spendybuddy/blob/main/logo/SpendyBuddy.png?raw=true" alt="SpendyBuddy Logo">
+    </header>
+    <h1>SpendyBuddy</h1>
+    <button id="open-settings">Settings</button>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+    <form id="expense-form">
+        <select id="family-member" required>
+            <option value="">Select Family Member</option>
+        </select>
+        <input type="text" id="expense-name" placeholder="Expense Name" required>
+        <input type="number" id="expense-amount" placeholder="Amount" step="0.01" required>
+        <input type="date" id="expense-date" required>
+        <select id="expense-category" required>
+            <option value="">Select Category</option>
+        </select>
+        <button type="submit">Add Expense</button>
+    </form>
+    <div id="expense-list">
+        <h2>Expense List</h2>
+        <table id="expense-table">
+            <thead>
+                <tr>
+                    <th>Family Member</th>
+                    <th>Expense</th>
+                    <th>Amount (₹)</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div id="today-expenses">
+        <h2>Today's Expenses</h2>
+        <table id="today-expense-table">
+            <thead>
+                <tr>
+                    <th>Family Member</th>
+                    <th>Expense</th>
+                    <th>Amount (₹)</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div id="report-section">
+        <h2>Monthly Report</h2>
+        <input type="month" id="report-month">
+        <button id="generate-report">Generate Report</button>
+        <div id="report-result"></div>
+    </div>
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Settings</h2>
+            <div id="settings-content">
+                <div>
+                    <h3>Categories</h3>
+                    <div id="category-list"></div>
+                    <input type="text" id="new-category" placeholder="New Category">
+                    <button id="add-category">Add Category</button>
+                </div>
+                <div>
+                    <h3>Family Members</h3>
+                    <div id="member-list"></div>
+                    <input type="text" id="new-member" placeholder="New Member">
+                    <button id="add-member">Add Member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <h3>Debug Log</h3>
+    <div id="debug-log"></div>
+
+    <script>
+        let db;
+        let categories = [];
+        let familyMembers = [];
+        let dbInitialized = false;
+
+        function log(message) {
+            console.log(message);
+            const debugLog = document.getElementById('debug-log');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            debugLog.appendChild(logEntry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        async function openDatabase() {
+            return new Promise((resolve, reject) => {
+                log('Opening database...');
+                const request = indexedDB.open('ExpenseTrackerDB', 1);
+                request.onerror = (event) => {
+                    log('Database error: ' + event.target.error);
+                    reject('Database error: ' + event.target.error);
+                };
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    dbInitialized = true;
+                    log('Database opened successfully');
+                    resolve(db);
+                };
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    log('Database upgrade needed. Creating object stores...');
+                    if (!db.objectStoreNames.contains('expenses')) {
+                        const store = db.createObjectStore('expenses', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('dateIndex', 'date');
+                        log('Created expenses object store');
+                    }
+                    if (!db.objectStoreNames.contains('categories')) {
+                        db.createObjectStore('categories', { keyPath: 'name' });
+                        log('Created categories object store');
+                    }
+                    if (!db.objectStoreNames.contains('familyMembers')) {
+                        db.createObjectStore('familyMembers', { keyPath: 'name' });
+                        log('Created familyMembers object store');
+                    }
+                };
+            });
+        }
+
+        async function loadCategories() {
+            log('Loading categories...');
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['categories'], 'readonly');
+                const store = transaction.objectStore('categories');
+                const request = store.getAll();
+                request.onerror = (event) => {
+                    log('Error fetching categories: ' + event.target.error);
+                    reject('Error fetching categories: ' + event.target.error);
+                };
+                request.onsuccess = (event) => {
+                    categories = event.target.result.map(cat => cat.name);
+                    log(`Loaded ${categories.length} categories`);
+                    resolve(categories);
+                };
+            });
+        }
+
+        async function loadFamilyMembers() {
+            log('Loading family members...');
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['familyMembers'], 'readonly');
+                const store = transaction.objectStore('familyMembers');
+                const request = store.getAll();
+                request.onerror = (event) => {
+                    log('Error fetching family members: ' + event.target.error);
+                    reject('Error fetching family members: ' + event.target.error);
+                };
+                request.onsuccess = (event) => {
+                    familyMembers = event.target.result.map(member => member.name);
+                    log(`Loaded ${familyMembers.length} family members`);
+                    resolve(familyMembers);
+                };
+            });
+        }
+
+        function updateCategoryDropdown() {
+            const select = document.getElementById('expense-category');
+            select.innerHTML = '<option value="">Select Category</option>' +
+                categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+            log('Category dropdown updated');
+        }
+
+        function updateFamilyMemberDropdown() {
+            const select = document.getElementById('family-member');
+            select.innerHTML = '<option value="">Select Family Member</option>' +
+                familyMembers.map(member => `<option value="${member}">${member}</option>`).join('');
+            log('Family member dropdown updated');
+        }
+
+        function displayCategories() {
+            const categoryList = document.getElementById('category-list');
+            categoryList.innerHTML = categories.map(cat => `
+                <span class="tag">${cat}<button onclick="removeCategory('${cat}')">&times;</button></span>
+            `).join('');
+            log('Categories displayed in settings');
+        }
+
+        function displayFamilyMembers() {
+            const memberList = document.getElementById('member-list');
+            memberList.innerHTML = familyMembers.map(member => `
+                <span class="tag">${member}<button onclick="removeFamilyMember('${member}')">&times;</button></span>
+            `).join('');
+            log('Family members displayed in settings');
+        }
+
+        async function addCategory(category) {
+            log(`Adding category: ${category}`);
+            const transaction = db.transaction(['categories'], 'readwrite');
+            const store = transaction.objectStore('categories');
+            await store.add({ name: category });
+            categories.push(category);
+            updateCategoryDropdown();
+            displayCategories();
+            log(`Category ${category} added successfully`);
+        }
+
+        async function addFamilyMember(member) {
+            log(`Adding family member: ${member}`);
+            const transaction = db.transaction(['familyMembers'], 'readwrite');
+            const store = transaction.objectStore('familyMembers');
+            await store.add({ name: member });
+            familyMembers.push(member);
+            updateFamilyMemberDropdown();
+            displayFamilyMembers();
+            log(`Family member ${member} added successfully`);
+        }
+
+        async function removeCategory(category) {
+            log(`Removing category: ${category}`);
+            const transaction = db.transaction(['categories'], 'readwrite');
+            const store = transaction.objectStore('categories');
+            await store.delete(category);
+            categories = categories.filter(c => c !== category);
+            updateCategoryDropdown();
+            displayCategories();
+            log(`Category ${category} removed successfully`);
+        }
+
+        async function removeFamilyMember(member) {
+            log(`Removing family member: ${member}`);
+            const transaction = db.transaction(['familyMembers'], 'readwrite');
+            const store = transaction.objectStore('familyMembers');
+            await store.delete(member);
+            familyMembers = familyMembers.filter(m => m !== member);
+            updateFamilyMemberDropdown();
+            displayFamilyMembers();
+            log(`Family member ${member} removed successfully`);
+        }
+
+        document.getElementById('open-settings').onclick = () => {
+            log('Opening settings modal');
+            document.getElementById('settings-modal').style.display = 'block';
+        };
+
+        document.querySelector('.close').onclick = () => {
+            log('Closing settings modal');
+            document.getElementById('settings-modal').style.display = 'none';
+        };
+
+        document.getElementById('add-category').onclick = () => {
+            const newCategory = document.getElementById('new-category').value.trim();
+            if (newCategory) {
+                addCategory(newCategory);
+                document.getElementById('new-category').value = '';
+            } else {
+                log('Attempted to add empty category');
+            }
+        };
+
+        document.getElementById('add-member').onclick = () => {
+            const newMember = document.getElementById('new-member').value.trim();
+            if (newMember) {
+                addFamilyMember(newMember);
+                document.getElementById('new-member').value = '';
+            } else {
+                log('Attempted to add empty family member');
+            }
+        };
+
+        async function initializeApp() {
+            log('Initializing app...');
+            try {
+                await openDatabase();
+                await loadCategories();
+                await loadFamilyMembers();
+                updateCategoryDropdown();
+                updateFamilyMemberDropdown();
+                displayCategories();
+                displayFamilyMembers();
+                await displayExpenses();
+                log('App initialized successfully');
+            } catch (error) {
+                log('Error initializing app: ' + error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            log('DOM loaded, starting app initialization...');
+            initializeApp();
+
+            document.getElementById('expense-form').onsubmit = async (e) => {
+                e.preventDefault();
+                log('Expense form submitted');
+                const expense = {
+                    familyMember: document.getElementById('family-member').value,
+                    name: document.getElementById('expense-name').value,
+                    amount: parseFloat(document.getElementById('expense-amount').value),
+                    date: document.getElementById('expense-date').value,
+                    category: document.getElementById('expense-category').value
+                };
+                try {
+                    await addExpense(expense);
+                    await displayExpenses();
+                    e.target.reset();
+                } catch (error) {
+                    log('Error submitting expense: ' + error);
+                }
+            };
+
+            document.getElementById('generate-report').onclick = generateReport;
+        });
+
+        async function addExpense(expense) {
+            log(`Adding expense: ${JSON.stringify(expense)}`);
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['expenses'], 'readwrite');
+                const store = transaction.objectStore('expenses');
+                const request = store.add(expense);
+                request.onerror = () => {
+                    log('Error adding expense: ' + request.error);
+                    reject(request.error);
+                };
+                request.onsuccess = () => {
+                    log('Expense added successfully');
+                    resolve(request.result);
+                };
+            });
+        }
+
+        async function displayExpenses() {
+            if (!dbInitialized) {
+                log('Database not initialized. Skipping expense display.');
+                return;
+            }
+            log('Fetching expenses for display');
+            try {
+                const transaction = db.transaction(['expenses'], 'readonly');
+                const store = transaction.objectStore('expenses');
+                const request = store.getAll();
+
+                request.onerror = () => {
+                    log('Error fetching expenses: ' + request.error);
+                    throw request.error;
+                };
+
+                request.onsuccess = () => {
+                    const expenses = request.result;
+                    log(`Retrieved ${expenses.length} expenses`);
+
+                    const tbody = document.querySelector('#expense-table tbody');
+                    tbody.innerHTML = expenses.map(e => `
+                        <tr class="${e.unnecessary ? 'unnecessary-spend' : ''}">
+                            <td>${e.familyMember}</td>
+                            <td>${e.name}</td>
+                            <td>₹${e.amount.toFixed(2)}</td>
+                            <td>${new Date(e.date).toLocaleDateString()}</td>
+                            <td>${e.category}</td>
+                            <td>
+                                <button onclick="editExpense(${e.id})">Edit</button>
+                                <button onclick="deleteExpense(${e.id})">Delete</button>
+                                <button onclick="toggleUnnecessary(${e.id})">${e.unnecessary ? 'Mark Necessary' : 'Mark Unnecessary'}</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    log('Expenses displayed successfully');
+                    displayTodayExpenses(expenses);
+                };
+            } catch (error) {
+                log('Error in displayExpenses: ' + error);
+            }
+        }
+
+        function displayTodayExpenses(expenses) {
+            const today = new Date().toISOString().split('T')[0];
+            const todayExpenses = expenses.filter(e => e.date === today);
+
+            const tbody = document.querySelector('#today-expense-table tbody');
+            tbody.innerHTML = todayExpenses.map(e => `
+                <tr class="${e.unnecessary ? 'unnecessary-spend' : ''}">
+                    <td>${e.familyMember}</td>
+                    <td>${e.name}</td>
+                    <td>₹${e.amount.toFixed(2)}</td>
+                    <td>${e.category}</td>
+                    <td>
+                        <button onclick="toggleUnnecessary(${e.id})">${e.unnecessary ? 'Mark Necessary' : 'Mark Unnecessary'}</button>
+                    </td>
+                </tr>
+            `).join('');
+            log(`Displayed ${todayExpenses.length} expenses for today`);
+        }
+
+        async function toggleUnnecessary(id) {
+            try {
+                const transaction = db.transaction(['expenses'], 'readwrite');
+                const store = transaction.objectStore('expenses');
+                const request = store.get(id);
+
+                request.onerror = () => {
+                    log('Error fetching expense: ' + request.error);
+                    throw request.error;
+                };
+
+                request.onsuccess = () => {
+                    const expense = request.result;
+                    expense.unnecessary = !expense.unnecessary;
+                    const updateRequest = store.put(expense);
+
+                    updateRequest.onerror = () => {
+                        log('Error updating expense: ' + updateRequest.error);
+                        throw updateRequest.error;
+                    };
+
+                    updateRequest.onsuccess = () => {
+                        log(`Expense ${id} marked as ${expense.unnecessary ? 'unnecessary' : 'necessary'}`);
+                        displayExpenses();
+                    };
+                };
+            } catch (error) {
+                log('Error toggling unnecessary status: ' + error);
+            }
+        }
+
+        async function generateReport() {
+            log('Generate report button clicked');
+            const month = document.getElementById('report-month').value;
+            if (!month) {
+                log('Report generation attempted without selecting a month');
+                alert('Please select a month');
+                return;
+            }
+            log(`Generating report for ${month}`);
+            try {
+                const [year, monthNum] = month.split('-');
+                const startDate = new Date(year, monthNum - 1, 1).toISOString();
+                const endDate = new Date(year, monthNum, 0).toISOString();
+
+                const transaction = db.transaction(['expenses'], 'readonly');
+                const store = transaction.objectStore('expenses');
+                const index = store.index('dateIndex');
+                const request = index.getAll(IDBKeyRange.bound(startDate, endDate));
+
+                request.onerror = (event) => {
+                    const error = 'Error fetching expenses for report: ' + event.target.error;
+                    log(error);
+                    throw new Error(error);
+                };
+
+                request.onsuccess = (event) => {
+                    const expenses = event.target.result;
+                    log(`Retrieved ${expenses.length} expenses for the report`);
+                    const categoryTotals = {};
+                    const itemTotals = {};
+                    let totalExpense = 0;
+
+                    expenses.forEach(e => {
+                        categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+                        itemTotals[e.name] = (itemTotals[e.name] || 0) + e.amount;
+                        totalExpense += e.amount;
+                    });
+
+                    const reportHtml = `
+                        <h3>Report for ${month}</h3>
+                        <h4>Total Expense: ₹${totalExpense.toFixed(2)}</h4>
+                        <h4>Category-wise Breakdown:</h4>
+                        <ul>${Object.entries(categoryTotals).map(([category, amount]) =>
+                        `<li>${category}: ₹${amount.toFixed(2)}</li>`).join('')}
+                        </ul>
+                        <h4>Item-wise Breakdown:</h4>
+                        <ul>${Object.entries(itemTotals).map(([item, amount]) =>
+                            `<li>${item}: ₹${amount.toFixed(2)}</li>`).join('')}
+                        </ul>
+                    `;
+
+                    document.getElementById('report-result').innerHTML = reportHtml;
+                    log('Report generated and displayed successfully');
+                };
+            } catch (error) {
+                log('Error generating report: ' + error);
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        function loadTheme() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        }
+
+        window.editExpense = (id) => {
+            log(`Edit expense clicked for id: ${id}`);
+            // Implement edit functionality
+        };
+
+        window.deleteExpense = async (id) => {
+            log(`Delete expense clicked for id: ${id}`);
+            try {
+                const transaction = db.transaction(['expenses'], 'readwrite');
+                const store = transaction.objectStore('expenses');
+                await store.delete(id);
+                log(`Expense with id ${id} deleted successfully`);
+                await displayExpenses();
+            } catch (error) {
+                log('Error deleting expense: ' + error);
+            }
+        };
+
+        window.removeCategory = removeCategory;
+        window.removeFamilyMember = removeFamilyMember;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+        });
+    </script>
+</body>
+
+</html>
