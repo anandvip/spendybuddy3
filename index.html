@@ -157,9 +157,9 @@
             height: 200px;
             overflow-y: auto;
             font-family: monospace;
-          color:#fff;
-          border-radius:15px;
-          width:fit-content
+            color: #fff;
+            border-radius: 15px;
+            width: fit-content
         }
 
         .unnecessary-spend {
@@ -194,6 +194,17 @@
             padding: 10px;
             cursor: pointer;
         }
+
+        .auth-section {
+            margin-bottom: 20px;
+        }
+
+        .auth-section input {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px;
+            width: calc(100% - 22px);
+        }
     </style>
 </head>
 
@@ -204,6 +215,25 @@
     <h1>SpendyBuddy</h1>
     <button id="open-settings">Settings</button>
     <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+
+    <div class="auth-section">
+        <h2>Sign Up</h2>
+        <input type="email" id="signup-email" placeholder="Email">
+        <input type="password" id="signup-password" placeholder="Password">
+        <button id="signup-button">Sign Up</button>
+    </div>
+
+    <div class="auth-section">
+        <h2>Sign In</h2>
+        <input type="email" id="signin-email" placeholder="Email">
+        <input type="password" id="signin-password" placeholder="Password">
+        <button id="signin-button">Sign In</button>
+    </div>
+
+    <div class="auth-section">
+        <button id="signout-button">Sign Out</button>
+    </div>
+
     <form id="expense-form">
         <select id="family-member" required>
             <option value="">Select Family Member</option>
@@ -276,8 +306,26 @@
     <h3>Debug Log</h3>
     <div id="debug-log"></div>
 
-    <script>
-        let db;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.3/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.8.3/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.8.3/firebase-firestore.js";
+        import { getStorage } from "https://www.gstatic.com/firebasejs/9.8.3/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2HQnSurnCX_An5CU_o6drWZEcX6eXZSQ",
+            authDomain: "spendybuddy-1.firebaseapp.com",
+            projectId: "spendybuddy-1",
+            storageBucket: "spendybuddy-1.appspot.com",
+            messagingSenderId: "376306820586",
+            appId: "1:376306820586:web:0119e6484660f4c8d7be93"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
         let categories = [];
         let familyMembers = [];
         let dbInitialized = false;
@@ -483,7 +531,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            log('DOM loaded, starting app initialization...');
+            loadTheme();
             initializeApp();
 
             document.getElementById('expense-form').onsubmit = async (e) => {
@@ -506,6 +554,37 @@
             };
 
             document.getElementById('generate-report').onclick = generateReport;
+
+            document.getElementById('signup-button').addEventListener('click', async () => {
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    alert('User signed up successfully');
+                } catch (error) {
+                    log('Error signing up: ' + error.message);
+                }
+            });
+
+            document.getElementById('signin-button').addEventListener('click', async () => {
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    alert('User signed in successfully');
+                } catch (error) {
+                    log('Error signing in: ' + error.message);
+                }
+            });
+
+            document.getElementById('signout-button').addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    alert('User signed out successfully');
+                } catch (error) {
+                    log('Error signing out: ' + error.message);
+                }
+            });
         });
 
         async function addExpense(expense) {
@@ -698,6 +777,7 @@
         window.editExpense = (id) => {
             log(`Edit expense clicked for id: ${id}`);
             // Implement edit functionality
+            
         };
 
         window.deleteExpense = async (id) => {
